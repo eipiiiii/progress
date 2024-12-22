@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QCheckBox
+    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QCheckBox, QMessageBox
 )
 from PyQt5.QtCore import QDate
 import matplotlib.pyplot as plt
@@ -15,7 +15,7 @@ class StudyProgressApp(QMainWindow):
         self.setWindowTitle("Study Progress Tracker")
         self.setGeometry(100, 100, 800, 600)
         
-        self.data_manager = DataManager()
+        self.data_manager = DataManager(self)
         self.tasks = self.data_manager.tasks
         self.records = self.data_manager.records
 
@@ -146,7 +146,7 @@ class StudyProgressApp(QMainWindow):
             self.target_amount_input.setValue(0)
             self.data_manager.save_data()  # Save data
         else:
-            print("Incomplete task information!")
+            self.show_error_message("Incomplete task information!")
 
     def delete_task(self):
         selected_task = self.task_list.currentItem()  # Get selected task
@@ -161,7 +161,7 @@ class StudyProgressApp(QMainWindow):
             self.update_graph_task_selector()
             self.data_manager.save_data()  # Save data
         else:
-            print("Please select a task to delete!")
+            self.show_error_message("Please select a task to delete!")
 
     def record_progress(self):
         task_name = self.task_selector.currentText()
@@ -188,9 +188,7 @@ class StudyProgressApp(QMainWindow):
                     self.records[task_name].append({"date": date, "progress_amount": progress_amount})
 
             # Calculate cumulative progress
-            cumulative_progress = 0
-            for record in self.records[task_name]:
-                cumulative_progress += record["progress_amount"]
+            cumulative_progress = sum(record["progress_amount"] for record in self.records[task_name])
 
             # Update cumulative progress (for graph)
             task = next((task for task in self.tasks if task["name"] == task_name), None)
@@ -200,7 +198,7 @@ class StudyProgressApp(QMainWindow):
 
             self.data_manager.save_data()  # Save data
         else:
-            print("No task to record progress for!")
+            self.show_error_message("No task to record progress for!")
 
     def update_task_list(self):
         self.task_list.clear()
@@ -221,16 +219,16 @@ class StudyProgressApp(QMainWindow):
         # Graph display processing
         task_name = self.graph_task_selector.currentText()
         if not task_name:
-            print("No task selected!")
+            self.show_error_message("No task selected!")
             return
 
         task = next((task for task in self.tasks if task["name"] == task_name), None)
         if not task:
-            print("Selected task not found!")
+            self.show_error_message("Selected task not found!")
             return
 
         if not self.records.get(task_name):
-            print(f"No progress records for {task_name}!")
+            self.show_error_message(f"No progress records for {task_name}!")
             return
 
         # Prepare data
@@ -243,18 +241,18 @@ class StudyProgressApp(QMainWindow):
             record_dates = [datetime.strptime(record["date"], "%Y-%m-%d") for record in self.records[task_name]]
             record_progress_amounts = [record["progress_amount"] for record in self.records[task_name]]
         except ValueError as e:
-            print(f"Error in date format: {e}")
+            self.show_error_message(f"Error in date format: {e}")
             return
 
         if not record_dates:
-            print("No progress records!")
+            self.show_error_message("No progress records!")
             return
 
         record_dates = [record_dates[0] - timedelta(days=1)] + record_dates  # Add date one day before
 
         # Calculate cumulative progress
-        cumulative_progress = 0
         cumulative_progress_list = []
+        cumulative_progress = 0
         for progress in record_progress_amounts:
             cumulative_progress += progress
             cumulative_progress_list.append(cumulative_progress)
@@ -263,14 +261,10 @@ class StudyProgressApp(QMainWindow):
         remaining_amounts = [target_amount] + [target_amount - progress for progress in cumulative_progress_list]
 
         # Ideal progress (expressed as remaining amount, initial state is target amount)
-        ideal_remaining = [target_amount] + [
-            target_amount - (target_amount * (i / (end_date - (start_date - timedelta(days=1))).days)) 
-            for i in range((end_date - (start_date - timedelta(days=1))).days + 1)
-        ]
-        ideal_dates = [start_date - timedelta(days=1)] + [
-            start_date - timedelta(days=1) + timedelta(days=i) 
-            for i in range((end_date - (start_date - timedelta(days=1))).days + 1)
-        ]
+        ideal_remaining = [target_amount - (target_amount * (i / (end_date - (start_date - timedelta(days=1))).days)) 
+                           for i in range((end_date - (start_date - timedelta(days=1))).days + 1)]
+        ideal_dates = [start_date - timedelta(days=1) + timedelta(days=i) 
+                       for i in range((end_date - (start_date - timedelta(days=1))).days + 1)]
 
         # Plot graph with seaborn style
         sns.set(style="whitegrid")
@@ -299,3 +293,6 @@ class StudyProgressApp(QMainWindow):
         plt.grid(True)
 
         plt.show()
+
+    def show_error_message(self, message):
+        QMessageBox.critical(self, "Error", message)
