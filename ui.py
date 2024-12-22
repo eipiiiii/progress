@@ -28,6 +28,7 @@ class StudyProgressApp(QMainWindow):
 
         # Task creation section
         task_group = QGroupBox("Create New Task")
+        task_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
         task_layout = QVBoxLayout()
         task_form = QFormLayout()
         self.task_name_input = QLineEdit()
@@ -40,6 +41,7 @@ class StudyProgressApp(QMainWindow):
         self.end_date_input.setDate(QDate.currentDate().addDays(7))
         self.end_date_input.setCalendarPopup(True)
         create_task_btn = QPushButton("Create Task")
+        create_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
         create_task_btn.clicked.connect(self.create_task)
 
         task_form.addRow("Task Name", self.task_name_input)
@@ -53,12 +55,14 @@ class StudyProgressApp(QMainWindow):
 
         # Task list section
         task_list_group = QGroupBox("Task List")
+        task_list_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
         task_list_layout = QVBoxLayout()
         self.task_list = QListWidget()
         task_list_layout.addWidget(self.task_list)
 
         # Task deletion button
         delete_task_btn = QPushButton("Delete Selected Task")
+        delete_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
         delete_task_btn.clicked.connect(self.delete_task)
         task_list_layout.addWidget(delete_task_btn)
 
@@ -67,6 +71,7 @@ class StudyProgressApp(QMainWindow):
 
         # Progress recording section
         record_group = QGroupBox("Record Progress")
+        record_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
         record_layout = QVBoxLayout()
         record_form = QFormLayout()
         self.task_selector = QComboBox()
@@ -78,6 +83,7 @@ class StudyProgressApp(QMainWindow):
         self.progress_amount_input.addItem("Delete")
         self.progress_amount_input.addItems([str(i) for i in range(1001)])
         record_task_btn = QPushButton("Record Progress")
+        record_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
         record_task_btn.clicked.connect(self.record_progress)
 
         record_form.addRow("Task", self.task_selector)
@@ -90,10 +96,12 @@ class StudyProgressApp(QMainWindow):
 
         # Graph display section
         graph_group = QGroupBox("Display Graph")
+        graph_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
         graph_layout = QVBoxLayout()
         self.graph_task_selector = QComboBox()
         self.update_graph_task_selector()
         show_graph_btn = QPushButton("Show Graph")
+        show_graph_btn.setStyleSheet("QPushButton { font-size: 14px; }")
         show_graph_btn.clicked.connect(self.show_graph)
         graph_layout.addWidget(QLabel("Select Task"))
         graph_layout.addWidget(self.graph_task_selector)
