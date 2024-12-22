@@ -1,15 +1,11 @@
-import sys
-import json
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QVBoxLayout, QWidget,
-    QLabel, QLineEdit, QPushButton, QListWidget, QDateEdit,
-    QFormLayout, QSpinBox, QGroupBox, QComboBox
+    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget
 )
 from PyQt5.QtCore import QDate
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import matplotlib.dates as mdates
-
+from data_manager import DataManager
 
 class StudyProgressApp(QMainWindow):
     def __init__(self):
@@ -17,10 +13,9 @@ class StudyProgressApp(QMainWindow):
         self.setWindowTitle("Study Progress Tracker")
         self.setGeometry(100, 100, 600, 400)
         
-        self.tasks = []  # タスクを管理するリスト
-        self.records = {}  # 進捗記録を管理する辞書
-
-        self.load_data()  # データの読み込み
+        self.data_manager = DataManager()
+        self.tasks = self.data_manager.tasks
+        self.records = self.data_manager.records
 
         self.init_ui()
 
@@ -59,6 +54,12 @@ class StudyProgressApp(QMainWindow):
         task_list_layout = QVBoxLayout()
         self.task_list = QListWidget()
         task_list_layout.addWidget(self.task_list)
+
+        # タスク削除ボタン
+        delete_task_btn = QPushButton("選択したタスクを削除")
+        delete_task_btn.clicked.connect(self.delete_task)
+        task_list_layout.addWidget(delete_task_btn)
+
         task_list_group.setLayout(task_list_layout)
         layout.addWidget(task_list_group)
 
@@ -131,35 +132,55 @@ class StudyProgressApp(QMainWindow):
             self.update_graph_task_selector()
             self.task_name_input.clear()
             self.target_amount_input.setValue(0)
-            self.save_data()  # データを保存
+            self.data_manager.save_data()  # データを保存
         else:
             print("タスクの情報が不足しています！")
 
+    def delete_task(self):
+        selected_task = self.task_list.currentItem()  # 選択されたタスクを取得
+        if selected_task:
+            task_name = selected_task.text().split(":")[0]  # タスク名を抽出
+            # タスクの削除
+            self.tasks = [task for task in self.tasks if task["name"] != task_name]
+            if task_name in self.records:
+                del self.records[task_name]
+            self.update_task_list()
+            self.update_task_selector()
+            self.update_graph_task_selector()
+            self.data_manager.save_data()  # データを保存
+        else:
+            print("削除するタスクを選択してください！")
+
     def record_progress(self):
-        # 進捗の記録
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
-        progress_amount = self.progress_amount_input.value()  # 進捗量
+        progress_amount = self.progress_amount_input.value()  # 新たに入力された進捗量
 
         if task_name and progress_amount > 0:
             if task_name not in self.records:
                 self.records[task_name] = []
 
-            # 同じ日付の記録がある場合は上書き
+            # 既存の記録があるか確認
             existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
             if existing_record:
-                print(f"既存の記録を上書きします: {existing_record['progress_amount']} -> {progress_amount}")
+                # 同じ日に進捗が記録されていた場合は上書き
                 existing_record["progress_amount"] = progress_amount
             else:
+                # 新たに進捗を追加
                 self.records[task_name].append({"date": date, "progress_amount": progress_amount})
-                print(f"新しい記録を追加しました: タスク={task_name}, 日付={date}, 進捗量={progress_amount}")
 
-            # 進捗量の更新
+            # 累積進捗量を計算
+            cumulative_progress = 0
+            for record in self.records[task_name]:
+                cumulative_progress += record["progress_amount"]
+
+            # 累積進捗量を更新（グラフ用）
             task = next((task for task in self.tasks if task["name"] == task_name), None)
             if task:
-                task["progress_amount"] += progress_amount  # 進捗量を加算
-                print(f"{task_name} の進捗量が更新されました: {task['progress_amount']}")
-            self.save_data()  # データを保存
+                task["progress_amount"] = cumulative_progress
+                print(f"{task_name} の累積進捗量が更新されました: {cumulative_progress}")
+
+            self.data_manager.save_data()  # データを保存
         else:
             print("記録するタスクがありません！")
 
@@ -178,11 +199,8 @@ class StudyProgressApp(QMainWindow):
         for task in self.tasks:
             self.graph_task_selector.addItem(task["name"])
 
-    def plot_progress(self):
-        if not self.tasks:
-            print("タスクがありません！")
-            return
-
+    def show_graph(self):
+        # グラフ表示処理
         task_name = self.graph_task_selector.currentText()
         if not task_name:
             print("タスクが選択されていません！")
@@ -215,8 +233,17 @@ class StudyProgressApp(QMainWindow):
             return
 
         record_dates = [record_dates[0] - timedelta(days=1)] + record_dates  # 1日前の日付を追加
-        remaining_amounts = [target_amount] + [target_amount - progress for progress in record_progress_amounts]
-    
+
+        # 累積進捗量を計算
+        cumulative_progress = 0
+        cumulative_progress_list = []
+        for progress in record_progress_amounts:
+            cumulative_progress += progress
+            cumulative_progress_list.append(cumulative_progress)
+
+        # 実際の残量（目標量 - 累積進捗量）
+        remaining_amounts = [target_amount] + [target_amount - progress for progress in cumulative_progress_list]
+
         # 理想進捗度（残量として表現、初期状態は目標量）
         ideal_remaining = [target_amount] + [
             target_amount - (target_amount * (i / (end_date - (start_date - timedelta(days=1))).days)) 
@@ -226,64 +253,26 @@ class StudyProgressApp(QMainWindow):
             start_date - timedelta(days=1) + timedelta(days=i) 
             for i in range((end_date - (start_date - timedelta(days=1))).days + 1)
         ]
-        
+
         # グラフ描画
         plt.figure(figsize=(10, 6))
 
         # 実際の進捗の残量を描画
-        if len(record_dates) == len(remaining_amounts):  # 長さを一致させる確認
-            plt.plot(record_dates, remaining_amounts, label="実際の残量", color="red", marker="o")
-        else:
-            print("日付と残量の長さが一致しません！")
-            return
+        if len(record_dates) > 1:
+            plt.plot(record_dates, remaining_amounts, label="実際の進捗", color="blue", marker="o")
 
-        # 理想進捗度（残量として表現）を描画
-        plt.plot(ideal_dates, ideal_remaining, label="理想進捗度（残量）", color="green", linestyle="--")
+        # 理想進捗度を描画
+        plt.plot(ideal_dates, ideal_remaining, label="理想進捗", linestyle="--", color="red")
 
-        # グラフの詳細設定
+        # グラフ設定
+        plt.title(f"{task_name} の進捗グラフ")
         plt.xlabel("日付")
         plt.ylabel("残量")
-        plt.title(f"残量の進捗: {task_name}")
-        plt.legend()
-        plt.grid(True)
-        plt.tight_layout()
-
-        # 日付フォーマットの設定
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.gca().xaxis.set_major_locator(mdates.DayLocator())
         plt.xticks(rotation=45)
-
-        # 日付範囲を設定
-        plt.xlim([start_date - timedelta(days=1), end_date])
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=1))
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        plt.legend()
+        plt.tight_layout()
+        plt.grid(True)
 
         plt.show()
-
-    def show_graph(self):
-        self.plot_progress()
-
-    def save_data(self):
-        # データをJSON形式で保存
-        data = {
-            "tasks": self.tasks,
-            "records": self.records
-        }
-        with open("study_progress_data.json", "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=4)
-
-    def load_data(self):
-        # データをJSONファイルから読み込み
-        try:
-            with open("study_progress_data.json", "r", encoding="utf-8") as f:
-                data = json.load(f)
-                self.tasks = data.get("tasks", [])
-                self.records = data.get("records", {})
-        except FileNotFoundError:
-            # ファイルがない場合は何もしない
-            pass
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    main_window = StudyProgressApp()
-    main_window.show()
-    sys.exit(app.exec_())
