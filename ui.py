@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QCheckBox, QMessageBox
+    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QMessageBox
 )
 from PyQt5.QtCore import QDate
 import matplotlib.pyplot as plt
@@ -81,17 +81,19 @@ class StudyProgressApp(QMainWindow):
         self.record_date_input.setCalendarPopup(True)
         self.progress_amount_input = QSpinBox()  # Progress amount input
         self.progress_amount_input.setMaximum(1000)
-        self.delete_checkbox = QCheckBox("Delete Progress")
         record_task_btn = QPushButton("Record Progress")
         record_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
         record_task_btn.clicked.connect(self.record_progress)
+        delete_progress_btn = QPushButton("Delete Progress")
+        delete_progress_btn.setStyleSheet("QPushButton { font-size: 14px; }")
+        delete_progress_btn.clicked.connect(self.delete_progress)
 
         record_form.addRow("Task", self.task_selector)
         record_form.addRow("Date", self.record_date_input)
         record_form.addRow("Progress Amount", self.progress_amount_input)
-        record_form.addRow(self.delete_checkbox)
         record_layout.addLayout(record_form)
         record_layout.addWidget(record_task_btn)
+        record_layout.addWidget(delete_progress_btn)
         record_group.setLayout(record_layout)
         layout.addWidget(record_group)
 
@@ -145,6 +147,7 @@ class StudyProgressApp(QMainWindow):
             self.task_name_input.clear()
             self.target_amount_input.setValue(0)
             self.data_manager.save_data()  # Save data
+            self.show_info_message("Task created successfully!")
         else:
             self.show_error_message("Incomplete task information!")
 
@@ -160,6 +163,7 @@ class StudyProgressApp(QMainWindow):
             self.update_task_selector()
             self.update_graph_task_selector()
             self.data_manager.save_data()  # Save data
+            self.show_info_message("Task deleted successfully!")
         else:
             self.show_error_message("Please select a task to delete!")
 
@@ -169,23 +173,17 @@ class StudyProgressApp(QMainWindow):
         progress_amount = self.progress_amount_input.value()  # New progress amount
 
         if task_name:
-            if self.delete_checkbox.isChecked():
-                # Delete the record for the specified date
-                if task_name in self.records:
-                    self.records[task_name] = [record for record in self.records[task_name] if record["date"] != date]
-                    print(f"Progress for {task_name} on {date} deleted.")
-            else:
-                if task_name not in self.records:
-                    self.records[task_name] = []
+            if task_name not in self.records:
+                self.records[task_name] = []
 
-                # Check for existing record
-                existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
-                if existing_record:
-                    # Overwrite if progress is already recorded for the same date
-                    existing_record["progress_amount"] = progress_amount
-                else:
-                    # Add new progress
-                    self.records[task_name].append({"date": date, "progress_amount": progress_amount})
+            # Check for existing record
+            existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
+            if existing_record:
+                # Overwrite if progress is already recorded for the same date
+                existing_record["progress_amount"] = progress_amount
+            else:
+                # Add new progress
+                self.records[task_name].append({"date": date, "progress_amount": progress_amount})
 
             # Calculate cumulative progress
             cumulative_progress = sum(record["progress_amount"] for record in self.records[task_name])
@@ -197,8 +195,21 @@ class StudyProgressApp(QMainWindow):
                 print(f"Cumulative progress for {task_name} updated: {cumulative_progress}")
 
             self.data_manager.save_data()  # Save data
+            self.show_info_message("Progress recorded successfully!")
         else:
             self.show_error_message("No task to record progress for!")
+
+    def delete_progress(self):
+        task_name = self.task_selector.currentText()
+        date = self.record_date_input.date().toString("yyyy-MM-dd")
+
+        if task_name:
+            if task_name in self.records:
+                self.records[task_name] = [record for record in self.records[task_name] if record["date"] != date]
+                self.data_manager.save_data()  # Save data
+                self.show_info_message("Progress deleted successfully!")
+        else:
+            self.show_error_message("No task to delete progress for!")
 
     def update_task_list(self):
         self.task_list.clear()
@@ -296,3 +307,6 @@ class StudyProgressApp(QMainWindow):
 
     def show_error_message(self, message):
         QMessageBox.critical(self, "Error", message)
+
+    def show_info_message(self, message):
+        QMessageBox.information(self, "Information", message)
