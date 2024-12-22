@@ -7,7 +7,7 @@ class DataManager:
         self.load_data()
 
     def save_data(self):
-        # データをJSON形式で保存
+        # Save data in JSON format
         data = {
             "tasks": self.tasks,
             "records": self.records
@@ -16,12 +16,12 @@ class DataManager:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     def load_data(self):
-        # データをJSONファイルから読み込み
+        # Load data from JSON file
         try:
             with open("study_progress_data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.tasks = data.get("tasks", [])
                 self.records = data.get("records", {})
         except FileNotFoundError:
-            # ファイルがない場合は何もしない
+            # Do nothing if file not found
             pass

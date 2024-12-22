@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import matplotlib.dates as mdates
 from data_manager import DataManager
+import matplotlib.image as mpimg  # 画像を読み込むためのモジュール
 
 class StudyProgressApp(QMainWindow):
     def __init__(self):
@@ -20,16 +21,16 @@ class StudyProgressApp(QMainWindow):
         self.init_ui()
 
     def init_ui(self):
-        # メインウィジェットとレイアウト
+        # Main widget and layout
         central_widget = QWidget()
         layout = QVBoxLayout()
 
-        # 新規タスク作成セクション
-        task_group = QGroupBox("新規タスク作成")
+        # Task creation section
+        task_group = QGroupBox("Create New Task")
         task_layout = QVBoxLayout()
         task_form = QFormLayout()
         self.task_name_input = QLineEdit()
-        self.target_amount_input = QSpinBox()  # 目標量の入力
+        self.target_amount_input = QSpinBox()  # Target amount input
         self.target_amount_input.setMaximum(1000)
         self.start_date_input = QDateEdit()
         self.start_date_input.setDate(QDate.currentDate())
@@ -37,34 +38,34 @@ class StudyProgressApp(QMainWindow):
         self.end_date_input = QDateEdit()
         self.end_date_input.setDate(QDate.currentDate().addDays(7))
         self.end_date_input.setCalendarPopup(True)
-        create_task_btn = QPushButton("タスクを作成")
+        create_task_btn = QPushButton("Create Task")
         create_task_btn.clicked.connect(self.create_task)
 
-        task_form.addRow("タスク名", self.task_name_input)
-        task_form.addRow("目標量", self.target_amount_input)
-        task_form.addRow("開始日", self.start_date_input)
-        task_form.addRow("目標終了日", self.end_date_input)
+        task_form.addRow("Task Name", self.task_name_input)
+        task_form.addRow("Target Amount", self.target_amount_input)
+        task_form.addRow("Start Date", self.start_date_input)
+        task_form.addRow("End Date", self.end_date_input)
         task_layout.addLayout(task_form)
         task_layout.addWidget(create_task_btn)
         task_group.setLayout(task_layout)
         layout.addWidget(task_group)
 
-        # タスクリストセクション
-        task_list_group = QGroupBox("タスクリスト")
+        # Task list section
+        task_list_group = QGroupBox("Task List")
         task_list_layout = QVBoxLayout()
         self.task_list = QListWidget()
         task_list_layout.addWidget(self.task_list)
 
-        # タスク削除ボタン
-        delete_task_btn = QPushButton("選択したタスクを削除")
+        # Task deletion button
+        delete_task_btn = QPushButton("Delete Selected Task")
         delete_task_btn.clicked.connect(self.delete_task)
         task_list_layout.addWidget(delete_task_btn)
 
         task_list_group.setLayout(task_list_layout)
         layout.addWidget(task_list_group)
 
-        # 進捗記録セクション
-        record_group = QGroupBox("進捗記録")
+        # Progress recording section
+        record_group = QGroupBox("Record Progress")
         record_layout = QVBoxLayout()
         record_form = QFormLayout()
         self.task_selector = QComboBox()
@@ -72,46 +73,47 @@ class StudyProgressApp(QMainWindow):
         self.record_date_input = QDateEdit()
         self.record_date_input.setDate(QDate.currentDate())
         self.record_date_input.setCalendarPopup(True)
-        self.progress_amount_input = QSpinBox()  # 進捗量の入力
-        self.progress_amount_input.setMaximum(1000)
-        record_task_btn = QPushButton("進捗を記録")
+        self.progress_amount_input = QComboBox()  # Progress amount input
+        self.progress_amount_input.addItem("Delete")
+        self.progress_amount_input.addItems([str(i) for i in range(1001)])
+        record_task_btn = QPushButton("Record Progress")
         record_task_btn.clicked.connect(self.record_progress)
 
-        record_form.addRow("タスク", self.task_selector)
-        record_form.addRow("日付", self.record_date_input)
-        record_form.addRow("進捗量", self.progress_amount_input)
+        record_form.addRow("Task", self.task_selector)
+        record_form.addRow("Date", self.record_date_input)
+        record_form.addRow("Progress Amount", self.progress_amount_input)
         record_layout.addLayout(record_form)
         record_layout.addWidget(record_task_btn)
         record_group.setLayout(record_layout)
         layout.addWidget(record_group)
 
-        # グラフ表示セクション
-        graph_group = QGroupBox("グラフ表示")
+        # Graph display section
+        graph_group = QGroupBox("Display Graph")
         graph_layout = QVBoxLayout()
         self.graph_task_selector = QComboBox()
         self.update_graph_task_selector()
-        show_graph_btn = QPushButton("グラフを表示")
+        show_graph_btn = QPushButton("Show Graph")
         show_graph_btn.clicked.connect(self.show_graph)
-        graph_layout.addWidget(QLabel("タスクを選択"))
+        graph_layout.addWidget(QLabel("Select Task"))
         graph_layout.addWidget(self.graph_task_selector)
         graph_layout.addWidget(show_graph_btn)
         graph_group.setLayout(graph_layout)
         layout.addWidget(graph_group)
 
-        # レイアウトをウィジェットにセット
+        # Set layout to central widget
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
         self.update_task_list()
 
     def create_task(self):
-        # タスクの新規作成
+        # Create new task
         task_name = self.task_name_input.text()
-        target_amount = self.target_amount_input.value()  # 目標量
+        target_amount = self.target_amount_input.value()  # Target amount
         start_date = self.start_date_input.date()
         end_date = self.end_date_input.date()
 
-        # 日付を計算して期間を取得
+        # Calculate duration
         start_date_obj = datetime(start_date.year(), start_date.month(), start_date.day())
         end_date_obj = datetime(end_date.year(), end_date.month(), end_date.day())
         duration = (end_date_obj - start_date_obj).days
@@ -119,9 +121,9 @@ class StudyProgressApp(QMainWindow):
         if task_name and target_amount > 0 and duration > 0:
             task = {
                 "name": task_name, 
-                "target_amount": target_amount,  # 目標量
+                "target_amount": target_amount,  # Target amount
                 "duration": duration, 
-                "progress_amount": 0,  # 進捗量を0に初期化
+                "progress_amount": 0,  # Initialize progress amount to 0
                 "start_date": start_date.toString("yyyy-MM-dd"),
                 "end_date": end_date.toString("yyyy-MM-dd")
             }
@@ -132,62 +134,69 @@ class StudyProgressApp(QMainWindow):
             self.update_graph_task_selector()
             self.task_name_input.clear()
             self.target_amount_input.setValue(0)
-            self.data_manager.save_data()  # データを保存
+            self.data_manager.save_data()  # Save data
         else:
-            print("タスクの情報が不足しています！")
+            print("Incomplete task information!")
 
     def delete_task(self):
-        selected_task = self.task_list.currentItem()  # 選択されたタスクを取得
+        selected_task = self.task_list.currentItem()  # Get selected task
         if selected_task:
-            task_name = selected_task.text().split(":")[0]  # タスク名を抽出
-            # タスクの削除
+            task_name = selected_task.text().split(":")[0]  # Extract task name
+            # Delete task
             self.tasks = [task for task in self.tasks if task["name"] != task_name]
             if task_name in self.records:
                 del self.records[task_name]
             self.update_task_list()
             self.update_task_selector()
             self.update_graph_task_selector()
-            self.data_manager.save_data()  # データを保存
+            self.data_manager.save_data()  # Save data
         else:
-            print("削除するタスクを選択してください！")
+            print("Please select a task to delete!")
 
     def record_progress(self):
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
-        progress_amount = self.progress_amount_input.value()  # 新たに入力された進捗量
+        progress_amount = self.progress_amount_input.currentText()  # New progress amount
 
-        if task_name and progress_amount > 0:
-            if task_name not in self.records:
-                self.records[task_name] = []
-
-            # 既存の記録があるか確認
-            existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
-            if existing_record:
-                # 同じ日に進捗が記録されていた場合は上書き
-                existing_record["progress_amount"] = progress_amount
+        if task_name:
+            if progress_amount == "Delete":
+                # Delete the record for the specified date
+                if task_name in self.records:
+                    self.records[task_name] = [record for record in self.records[task_name] if record["date"] != date]
+                    print(f"Progress for {task_name} on {date} deleted.")
             else:
-                # 新たに進捗を追加
-                self.records[task_name].append({"date": date, "progress_amount": progress_amount})
+                progress_amount = int(progress_amount)
+                if task_name not in self.records:
+                    self.records[task_name] = []
 
-            # 累積進捗量を計算
+                # Check for existing record
+                existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
+                if existing_record:
+                    # Overwrite if progress is already recorded for the same date
+                    existing_record["progress_amount"] = progress_amount
+                else:
+                    # Add new progress
+                    self.records[task_name].append({"date": date, "progress_amount": progress_amount})
+
+            # Calculate cumulative progress
             cumulative_progress = 0
             for record in self.records[task_name]:
                 cumulative_progress += record["progress_amount"]
 
-            # 累積進捗量を更新（グラフ用）
+            # Update cumulative progress (for graph)
             task = next((task for task in self.tasks if task["name"] == task_name), None)
             if task:
                 task["progress_amount"] = cumulative_progress
-                print(f"{task_name} の累積進捗量が更新されました: {cumulative_progress}")
+                print(f"Cumulative progress for {task_name} updated: {cumulative_progress}")
 
-            self.data_manager.save_data()  # データを保存
+            self.data_manager.save_data()  # Save data
         else:
-            print("記録するタスクがありません！")
+            print("No task to record progress for!")
 
     def update_task_list(self):
         self.task_list.clear()
         for task in self.tasks:
-            self.task_list.addItem(f"{task['name']}: {task['target_amount']}（{task['start_date']} ~ {task['end_date']}）")
+            self.task_list.addItem(f"{task['name']}: {task['target_amount']} ({task['start_date']} ~ {task['end_date']})")
 
     def update_task_selector(self):
         self.task_selector.clear()
@@ -200,51 +209,51 @@ class StudyProgressApp(QMainWindow):
             self.graph_task_selector.addItem(task["name"])
 
     def show_graph(self):
-        # グラフ表示処理
+        # Graph display processing
         task_name = self.graph_task_selector.currentText()
         if not task_name:
-            print("タスクが選択されていません！")
+            print("No task selected!")
             return
 
         task = next((task for task in self.tasks if task["name"] == task_name), None)
         if not task:
-            print("選択されたタスクが見つかりません！")
+            print("Selected task not found!")
             return
 
         if not self.records.get(task_name):
-            print(f"{task_name} の進捗記録がありません！")
+            print(f"No progress records for {task_name}!")
             return
 
-        # データの準備
-        target_amount = task["target_amount"]  # 目標量
+        # Prepare data
+        target_amount = task["target_amount"]  # Target amount
         start_date = datetime.strptime(task["start_date"], "%Y-%m-%d")
         end_date = datetime.strptime(task["end_date"], "%Y-%m-%d")
 
-        # 実際の進捗のデータ
+        # Actual progress data
         try:
             record_dates = [datetime.strptime(record["date"], "%Y-%m-%d") for record in self.records[task_name]]
             record_progress_amounts = [record["progress_amount"] for record in self.records[task_name]]
         except ValueError as e:
-            print(f"日付形式にエラーがあります: {e}")
+            print(f"Error in date format: {e}")
             return
 
         if not record_dates:
-            print("進捗記録がありません！")
+            print("No progress records!")
             return
 
-        record_dates = [record_dates[0] - timedelta(days=1)] + record_dates  # 1日前の日付を追加
+        record_dates = [record_dates[0] - timedelta(days=1)] + record_dates  # Add date one day before
 
-        # 累積進捗量を計算
+        # Calculate cumulative progress
         cumulative_progress = 0
         cumulative_progress_list = []
         for progress in record_progress_amounts:
             cumulative_progress += progress
             cumulative_progress_list.append(cumulative_progress)
 
-        # 実際の残量（目標量 - 累積進捗量）
+        # Actual remaining amount (target amount - cumulative progress)
         remaining_amounts = [target_amount] + [target_amount - progress for progress in cumulative_progress_list]
 
-        # 理想進捗度（残量として表現、初期状態は目標量）
+        # Ideal progress (expressed as remaining amount, initial state is target amount)
         ideal_remaining = [target_amount] + [
             target_amount - (target_amount * (i / (end_date - (start_date - timedelta(days=1))).days)) 
             for i in range((end_date - (start_date - timedelta(days=1))).days + 1)
@@ -254,24 +263,28 @@ class StudyProgressApp(QMainWindow):
             for i in range((end_date - (start_date - timedelta(days=1))).days + 1)
         ]
 
-        # グラフ描画
-        plt.figure(figsize=(10, 6))
+        # Plot graph
+        fig, ax = plt.subplots(figsize=(10, 6))
 
-        # 実際の進捗の残量を描画
+        # Load background image
+        img = mpimg.imread('background1.jpg')
+        ax.imshow(img, extent=[mdates.date2num(start_date - timedelta(days=1)), mdates.date2num(end_date), 0, target_amount], aspect='auto', zorder=-1)
+
+        # Plot actual progress remaining amount
         if len(record_dates) > 1:
-            plt.plot(record_dates, remaining_amounts, label="実際の進捗", color="blue", marker="o")
+            ax.plot(record_dates, remaining_amounts, label="Actual Progress", color="blue", marker="o", zorder=1)
 
-        # 理想進捗度を描画
-        plt.plot(ideal_dates, ideal_remaining, label="理想進捗", linestyle="--", color="red")
+        # Plot ideal progress
+        ax.plot(ideal_dates, ideal_remaining, label="Ideal Progress", linestyle="--", color="red", zorder=1)
 
-        # グラフ設定
-        plt.title(f"{task_name} の進捗グラフ")
-        plt.xlabel("日付")
-        plt.ylabel("残量")
+        # Graph settings
+        ax.set_title(f"Progress Graph for {task_name}")
+        ax.set_xlabel("Date")
+        ax.set_ylabel("Remaining Amount")
         plt.xticks(rotation=45)
-        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=1))
-        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-        plt.legend()
+        ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+        ax.legend()
         plt.tight_layout()
         plt.grid(True)
 
