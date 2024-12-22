@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget
+    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QCheckBox
 )
 from PyQt5.QtCore import QDate
 import matplotlib.pyplot as plt
@@ -79,9 +79,9 @@ class StudyProgressApp(QMainWindow):
         self.record_date_input = QDateEdit()
         self.record_date_input.setDate(QDate.currentDate())
         self.record_date_input.setCalendarPopup(True)
-        self.progress_amount_input = QComboBox()  # Progress amount input
-        self.progress_amount_input.addItem("Delete")
-        self.progress_amount_input.addItems([str(i) for i in range(1001)])
+        self.progress_amount_input = QSpinBox()  # Progress amount input
+        self.progress_amount_input.setMaximum(1000)
+        self.delete_checkbox = QCheckBox("Delete Progress")
         record_task_btn = QPushButton("Record Progress")
         record_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
         record_task_btn.clicked.connect(self.record_progress)
@@ -89,6 +89,7 @@ class StudyProgressApp(QMainWindow):
         record_form.addRow("Task", self.task_selector)
         record_form.addRow("Date", self.record_date_input)
         record_form.addRow("Progress Amount", self.progress_amount_input)
+        record_form.addRow(self.delete_checkbox)
         record_layout.addLayout(record_form)
         record_layout.addWidget(record_task_btn)
         record_group.setLayout(record_layout)
@@ -165,16 +166,15 @@ class StudyProgressApp(QMainWindow):
     def record_progress(self):
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
-        progress_amount = self.progress_amount_input.currentText()  # New progress amount
+        progress_amount = self.progress_amount_input.value()  # New progress amount
 
         if task_name:
-            if progress_amount == "Delete":
+            if self.delete_checkbox.isChecked():
                 # Delete the record for the specified date
                 if task_name in self.records:
                     self.records[task_name] = [record for record in self.records[task_name] if record["date"] != date]
                     print(f"Progress for {task_name} on {date} deleted.")
             else:
-                progress_amount = int(progress_amount)
                 if task_name not in self.records:
                     self.records[task_name] = []
 
