@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import QDate
 import matplotlib.pyplot as plt
+import seaborn as sns
 from datetime import datetime, timedelta
 import matplotlib.dates as mdates
 from data_manager import DataManager
@@ -12,7 +13,7 @@ class StudyProgressApp(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Study Progress Tracker")
-        self.setGeometry(100, 100, 600, 400)
+        self.setGeometry(100, 100, 800, 600)
         
         self.data_manager = DataManager()
         self.tasks = self.data_manager.tasks
@@ -263,8 +264,9 @@ class StudyProgressApp(QMainWindow):
             for i in range((end_date - (start_date - timedelta(days=1))).days + 1)
         ]
 
-        # Plot graph
-        fig, ax = plt.subplots(figsize=(10, 6))
+        # Plot graph with seaborn style
+        sns.set(style="whitegrid")
+        fig, ax = plt.subplots(figsize=(12, 8))
 
         # Load background image
         img = mpimg.imread('background1.jpg')
@@ -278,9 +280,9 @@ class StudyProgressApp(QMainWindow):
         ax.plot(ideal_dates, ideal_remaining, label="Ideal Progress", linestyle="--", color="red", zorder=1)
 
         # Graph settings
-        ax.set_title(f"Progress Graph for {task_name}")
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Remaining Amount")
+        ax.set_title(f"Progress Graph for {task_name}", fontsize=16)
+        ax.set_xlabel("Date", fontsize=14)
+        ax.set_ylabel("Remaining Amount", fontsize=14)
         plt.xticks(rotation=45)
         ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
