@@ -136,31 +136,34 @@ class StudyProgressApp(QMainWindow):
             print("タスクの情報が不足しています！")
 
     def record_progress(self):
-        # 進捗の記録
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
-        progress_amount = self.progress_amount_input.value()  # 進捗量
-    
+        progress_amount = self.progress_amount_input.value()  # 新たに入力された進捗量
+
         if task_name and progress_amount > 0:
             if task_name not in self.records:
                 self.records[task_name] = []
-    
-            # 同じ日付の記録がある場合は進捗量を追加
+
+            # 既存の記録があるか確認
             existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
             if existing_record:
-                # 前回の進捗量に追加
-                existing_record["progress_amount"] += progress_amount
-                print(f"進捗量を追加しました: {existing_record['progress_amount']}")
+                # 同じ日に進捗が記録されていた場合は上書き
+                existing_record["progress_amount"] = progress_amount
             else:
-                # 新規の記録を追加
+                # 新たに進捗を追加
                 self.records[task_name].append({"date": date, "progress_amount": progress_amount})
-                print(f"新しい記録を追加しました: タスク={task_name}, 日付={date}, 進捗量={progress_amount}")
-    
-            # 進捗量の更新
+
+            # 累積進捗量を計算
+            cumulative_progress = 0
+            for record in self.records[task_name]:
+                cumulative_progress += record["progress_amount"]
+
+            # 累積進捗量を更新（グラフ用）
             task = next((task for task in self.tasks if task["name"] == task_name), None)
             if task:
-                task["progress_amount"] += progress_amount  # 進捗量を加算
-                print(f"{task_name} の進捗量が更新されました: {task['progress_amount']}")
+                task["progress_amount"] = cumulative_progress
+                print(f"{task_name} の累積進捗量が更新されました: {cumulative_progress}")
+
             self.save_data()  # データを保存
         else:
             print("記録するタスクがありません！")
@@ -184,26 +187,26 @@ class StudyProgressApp(QMainWindow):
         if not self.tasks:
             print("タスクがありません！")
             return
-
+    
         task_name = self.graph_task_selector.currentText()
         if not task_name:
             print("タスクが選択されていません！")
             return
-
+    
         task = next((task for task in self.tasks if task["name"] == task_name), None)
         if not task:
             print("選択されたタスクが見つかりません！")
             return
-
+    
         if not self.records.get(task_name):
             print(f"{task_name} の進捗記録がありません！")
             return
-
+    
         # データの準備
         target_amount = task["target_amount"]  # 目標量
         start_date = datetime.strptime(task["start_date"], "%Y-%m-%d")
         end_date = datetime.strptime(task["end_date"], "%Y-%m-%d")
-
+    
         # 実際の進捗のデータ
         try:
             record_dates = [datetime.strptime(record["date"], "%Y-%m-%d") for record in self.records[task_name]]
@@ -211,13 +214,22 @@ class StudyProgressApp(QMainWindow):
         except ValueError as e:
             print(f"日付形式にエラーがあります: {e}")
             return
-
+    
         if not record_dates:
             print("進捗記録がありません！")
             return
-
+    
         record_dates = [record_dates[0] - timedelta(days=1)] + record_dates  # 1日前の日付を追加
-        remaining_amounts = [target_amount] + [target_amount - progress for progress in record_progress_amounts]
+    
+        # 累積進捗量を計算
+        cumulative_progress = 0
+        cumulative_progress_list = []
+        for progress in record_progress_amounts:
+            cumulative_progress += progress
+            cumulative_progress_list.append(cumulative_progress)
+    
+        # 実際の残量（目標量 - 累積進捗量）
+        remaining_amounts = [target_amount] + [target_amount - progress for progress in cumulative_progress_list]
     
         # 理想進捗度（残量として表現、初期状態は目標量）
         ideal_remaining = [target_amount] + [
@@ -231,17 +243,17 @@ class StudyProgressApp(QMainWindow):
         
         # グラフ描画
         plt.figure(figsize=(10, 6))
-
+    
         # 実際の進捗の残量を描画
         if len(record_dates) == len(remaining_amounts):  # 長さを一致させる確認
             plt.plot(record_dates, remaining_amounts, label="実際の残量", color="red", marker="o")
         else:
             print("日付と残量の長さが一致しません！")
             return
-
+    
         # 理想進捗度（残量として表現）を描画
         plt.plot(ideal_dates, ideal_remaining, label="理想進捗度（残量）", color="green", linestyle="--")
-
+    
         # グラフの詳細設定
         plt.xlabel("日付")
         plt.ylabel("残量")
@@ -249,15 +261,15 @@ class StudyProgressApp(QMainWindow):
         plt.legend()
         plt.grid(True)
         plt.tight_layout()
-
+    
         # 日付フォーマットの設定
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
         plt.gca().xaxis.set_major_locator(mdates.DayLocator())
         plt.xticks(rotation=45)
-
+    
         # 日付範囲を設定
         plt.xlim([start_date - timedelta(days=1), end_date])
-
+    
         plt.show()
 
     def show_graph(self):
