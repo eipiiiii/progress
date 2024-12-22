@@ -140,20 +140,22 @@ class StudyProgressApp(QMainWindow):
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
         progress_amount = self.progress_amount_input.value()  # 進捗量
-
+    
         if task_name and progress_amount > 0:
             if task_name not in self.records:
                 self.records[task_name] = []
-
-            # 同じ日付の記録がある場合は上書き
+    
+            # 同じ日付の記録がある場合は進捗量を追加
             existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
             if existing_record:
-                print(f"既存の記録を上書きします: {existing_record['progress_amount']} -> {progress_amount}")
-                existing_record["progress_amount"] = progress_amount
+                # 前回の進捗量に追加
+                existing_record["progress_amount"] += progress_amount
+                print(f"進捗量を追加しました: {existing_record['progress_amount']}")
             else:
+                # 新規の記録を追加
                 self.records[task_name].append({"date": date, "progress_amount": progress_amount})
                 print(f"新しい記録を追加しました: タスク={task_name}, 日付={date}, 進捗量={progress_amount}")
-
+    
             # 進捗量の更新
             task = next((task for task in self.tasks if task["name"] == task_name), None)
             if task:
