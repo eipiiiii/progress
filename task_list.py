@@ -14,3 +14,18 @@ def setup_task_list_section(app, layout):
 
     task_list_group.setLayout(task_list_layout)
     layout.addWidget(task_list_group)
+
+def delete_task(app):
+    selected_task = app.task_list.currentItem()
+    if selected_task:
+        task_name = selected_task.text().split(":")[0]
+        app.tasks = [task for task in app.tasks if task["name"] != task_name]
+        if task_name in app.records:
+            del app.records[task_name]
+        app.update_task_list()
+        app.update_task_selector()
+        app.update_graph_task_selector()
+        app.data_manager.save_data()
+        app.show_info_message("Task deleted successfully!")
+    else:
+        app.show_error_message("Please select a task to delete!")

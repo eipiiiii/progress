@@ -1,11 +1,10 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QMessageBox
-from PyQt5.QtCore import QDate, QTimer
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QMessageBox
+from data_manager import DataManager
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
+import matplotlib.image as mpimg
 import seaborn as sns
 from datetime import datetime, timedelta
-import matplotlib.dates as mdates
-from data_manager import DataManager
-import matplotlib.image as mpimg  # 画像を読み込むためのモジュール
 from task_creation import setup_task_creation_section
 from task_list import setup_task_list_section
 from progress_recording import setup_progress_recording_section

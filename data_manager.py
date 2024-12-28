@@ -9,7 +9,6 @@ class DataManager:
         self.load_data()
 
     def save_data(self):
-        # Save data in JSON format
         data = {
             "tasks": self.tasks,
             "records": self.records
@@ -21,14 +20,12 @@ class DataManager:
             self.show_error_message(f"Failed to save data: {e}")
 
     def load_data(self):
-        # Load data from JSON file
         try:
             with open("study_progress_data.json", "r", encoding="utf-8") as f:
                 data = json.load(f)
                 self.tasks = data.get("tasks", [])
                 self.records = data.get("records", {})
         except FileNotFoundError:
-            # Do nothing if file not found
             pass
         except Exception as e:
             self.show_error_message(f"Failed to load data: {e}")

@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QFormLayout, QComboBox, QDateEdit, QSpinBox, QPushButton
-from PyQt5.QtCore import QDate  # QDateをインポート
+from PyQt5.QtCore import QDate
+from datetime import datetime
 
 def setup_progress_recording_section(app, layout):
     record_group = QGroupBox("Record Progress")
@@ -11,8 +12,8 @@ def setup_progress_recording_section(app, layout):
     app.record_date_input = QDateEdit()
     app.record_date_input.setDate(QDate.currentDate())
     app.record_date_input.setCalendarPopup(True)
-    app.record_date_input.dateChanged.connect(app.update_progress_amount_input)  # 日付が変更されたときに呼び出す
-    app.progress_amount_input = QSpinBox()  # 進捗量入力
+    app.record_date_input.dateChanged.connect(app.update_progress_amount_input)
+    app.progress_amount_input = QSpinBox()
     app.progress_amount_input.setMaximum(1000)
     record_task_btn = QPushButton("Record Progress")
     record_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
@@ -29,3 +30,49 @@ def setup_progress_recording_section(app, layout):
     record_layout.addWidget(delete_progress_btn)
     record_group.setLayout(record_layout)
     layout.addWidget(record_group)
+
+def record_progress(app):
+    task_name = app.task_selector.currentText()
+    date = app.record_date_input.date().toString("yyyy-MM-dd")
+    progress_amount = app.progress_amount_input.value()
+
+    today = datetime.now().date()
+    record_date = datetime.strptime(date, "%Y-%m-%d").date()
+
+    if record_date > today:
+        app.show_error_message("Cannot record progress for a future date!")
+        return
+
+    if task_name:
+        if task_name not in app.records:
+            app.records[task_name] = []
+
+        existing_record = next((record for record in app.records[task_name] if record["date"] == date), None)
+        if existing_record:
+            existing_record["progress_amount"] = progress_amount
+        else:
+            app.records[task_name].append({"date": date, "progress_amount": progress_amount})
+
+        cumulative_progress = sum(record["progress_amount"] for record in app.records[task_name])
+
+        task = next((task for task in app.tasks if task["name"] == task_name), None)
+        if task:
+            task["progress_amount"] = cumulative_progress
+            print(f"Cumulative progress for {task_name} updated: {cumulative_progress}")
+
+        app.data_manager.save_data()
+        app.show_info_message("Progress recorded successfully!")
+    else:
+        app.show_error_message("No task to record progress for!")
+
+def delete_progress(app):
+    task_name = app.task_selector.currentText()
+    date = app.record_date_input.date().toString("yyyy-MM-dd")
+
+    if task_name:
+        if task_name in app.records:
+            app.records[task_name] = [record for record in app.records[task_name] if record["date"] != date]
+            app.data_manager.save_data()
+            app.show_info_message("Progress deleted successfully!")
+    else:
+        app.show_error_message("No task to delete progress for!")
