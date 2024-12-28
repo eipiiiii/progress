@@ -97,6 +97,7 @@ class StudyProgressApp(QMainWindow):
         self.record_date_input = QDateEdit()
         self.record_date_input.setDate(QDate.currentDate())
         self.record_date_input.setCalendarPopup(True)
+        self.record_date_input.dateChanged.connect(self.update_progress_amount_input)  # 日付が変更されたときに呼び出す
         self.progress_amount_input = QSpinBox()  # 進捗量入力
         self.progress_amount_input.setMaximum(1000)
         record_task_btn = QPushButton("Record Progress")
@@ -114,6 +115,19 @@ class StudyProgressApp(QMainWindow):
         record_layout.addWidget(delete_progress_btn)
         record_group.setLayout(record_layout)
         layout.addWidget(record_group)
+
+    def update_progress_amount_input(self):
+        task_name = self.task_selector.currentText()
+        date = self.record_date_input.date().toString("yyyy-MM-dd")
+
+        if task_name in self.records:
+            existing_record = next((record for record in self.records[task_name] if record["date"] == date), None)
+            if existing_record:
+                self.progress_amount_input.setValue(existing_record["progress_amount"])
+            else:
+                self.progress_amount_input.setValue(0)
+        else:
+            self.progress_amount_input.setValue(0)
 
     def setup_graph_display_section(self, layout):
         graph_group = QGroupBox("Display Graph")
