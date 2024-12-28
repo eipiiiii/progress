@@ -6,6 +6,7 @@ import matplotlib.dates as mdates
 import matplotlib.image as mpimg
 
 def setup_graph_display_section(app, layout):
+    # グラフ表示セクションのセットアップ
     graph_group = QGroupBox("Display Graph")
     graph_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
     graph_layout = QVBoxLayout()
@@ -21,6 +22,7 @@ def setup_graph_display_section(app, layout):
     layout.addWidget(graph_group)
 
 def show_graph(app):
+    # グラフを表示する関数
     task_name = app.graph_task_selector.currentText()
     if not task_name:
         app.show_error_message("No task selected!")

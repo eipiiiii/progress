@@ -1,6 +1,7 @@
 from PyQt5.QtWidgets import QGroupBox, QVBoxLayout, QListWidget, QPushButton
 
 def setup_task_list_section(app, layout):
+    # タスクリストセクションのセットアップ
     task_list_group = QGroupBox("Task List")
     task_list_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
     task_list_layout = QVBoxLayout()
@@ -16,6 +17,7 @@ def setup_task_list_section(app, layout):
     layout.addWidget(task_list_group)
 
 def delete_task(app):
+    # タスクを削除する関数
     selected_task = app.task_list.currentItem()
     if selected_task:
         task_name = selected_task.text().split(":")[0]

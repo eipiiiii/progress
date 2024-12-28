@@ -3,6 +3,7 @@ from PyQt5.QtCore import QDate
 from datetime import datetime
 
 def setup_task_creation_section(app, layout):
+    # タスク作成セクションのセットアップ
     task_group = QGroupBox("Create New Task")
     task_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
     task_layout = QVBoxLayout()
@@ -30,6 +31,7 @@ def setup_task_creation_section(app, layout):
     layout.addWidget(task_group)
 
 def create_task(app):
+    # タスクを作成する関数
     task_name = app.task_name_input.text()
     target_amount = app.target_amount_input.value()
     start_date = app.start_date_input.date()

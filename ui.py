@@ -41,6 +41,7 @@ class StudyProgressApp(QMainWindow):
         self.update_task_list()
 
     def update_progress_amount_input(self):
+        # 進捗量入力を更新する関数
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
 
@@ -54,6 +55,7 @@ class StudyProgressApp(QMainWindow):
             self.progress_amount_input.setValue(0)
 
     def create_task(self):
+        # タスクを作成する関数
         task_name = self.task_name_input.text()
         target_amount = self.target_amount_input.value()  # 目標量
         start_date = self.start_date_input.date()
@@ -85,6 +87,7 @@ class StudyProgressApp(QMainWindow):
             self.show_error_message("Incomplete task information!")
 
     def delete_task(self):
+        # タスクを削除する関数
         selected_task = self.task_list.currentItem()  # 選択されたタスクを取得
         if selected_task:
             task_name = selected_task.text().split(":")[0]  # タスク名を抽出
@@ -100,6 +103,7 @@ class StudyProgressApp(QMainWindow):
             self.show_error_message("Please select a task to delete!")
 
     def record_progress(self):
+        # 進捗を記録する関数
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
         progress_amount = self.progress_amount_input.value()  # 新しい進捗量
@@ -134,6 +138,7 @@ class StudyProgressApp(QMainWindow):
             self.show_error_message("No task to record progress for!")
 
     def delete_progress(self):
+        # 進捗を削除する関数
         task_name = self.task_selector.currentText()
         date = self.record_date_input.date().toString("yyyy-MM-dd")
 
@@ -146,21 +151,25 @@ class StudyProgressApp(QMainWindow):
             self.show_error_message("No task to delete progress for!")
 
     def update_task_list(self):
+        # タスクリストを更新する関数
         self.task_list.clear()
         for task in self.tasks:
             self.task_list.addItem(f"{task['name']}: {task['target_amount']} ({task['start_date']} ~ {task['end_date']})")
 
     def update_task_selector(self):
+        # タスクセレクターを更新する関数
         self.task_selector.clear()
         for task in self.tasks:
             self.task_selector.addItem(task["name"])
 
     def update_graph_task_selector(self):
+        # グラフ用タスクセレクターを更新する関数
         self.graph_task_selector.clear()
         for task in self.tasks:
             self.graph_task_selector.addItem(task["name"])
 
     def show_graph(self):
+        # グラフを表示する関数
         task_name = self.graph_task_selector.currentText()
         if not task_name:
             self.show_error_message("No task selected!")
