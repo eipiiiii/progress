@@ -27,10 +27,23 @@ class DataManager:
                 data = json.load(f)
                 self.tasks = data.get("tasks", [])
                 self.records = data.get("records", {})
+                self.validate_data()
         except FileNotFoundError:
             pass
         except Exception as e:
             self.show_error_message(f"Failed to load data: {e}")
+
+    def validate_data(self):
+        # データのバリデーション
+        for task in self.tasks:
+            if not all(key in task for key in ["name", "target_amount", "duration", "progress_amount", "start_date", "end_date"]):
+                self.show_error_message(f"Invalid task data: {task}")
+                self.tasks.remove(task)
+        for task_name, records in self.records.items():
+            for record in records:
+                if not all(key in record for key in ["date", "progress_amount"]):
+                    self.show_error_message(f"Invalid record data for task {task_name}: {record}")
+                    self.records[task_name].remove(record)
 
     def show_error_message(self, message):
         # エラーメッセージを表示

@@ -1,14 +1,14 @@
-from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QMessageBox
-from data_manager import DataManager
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QMessageBox, QLabel, QComboBox, QPushButton
 import seaborn as sns
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+import matplotlib.image as mpimg
+from data_manager import DataManager
 from datetime import datetime, timedelta
 from task_creation import setup_task_creation_section
 from task_list import setup_task_list_section
 from progress_recording import setup_progress_recording_section
-from graph_display import setup_graph_display_section
+from task_summary import setup_task_summary_section, update_task_summary  # 新しいセクションのインポート
 
 class StudyProgressApp(QMainWindow):
     def __init__(self):
@@ -19,6 +19,9 @@ class StudyProgressApp(QMainWindow):
         self.data_manager = DataManager(self)
         self.tasks = self.data_manager.tasks
         self.records = self.data_manager.records
+
+        self.daily_target_label = QLabel("Daily Target: N/A")
+        self.total_progress_label = QLabel("Total Progress: N/A")
 
         self.init_ui()
         self.check_missed_dates()
@@ -32,7 +35,7 @@ class StudyProgressApp(QMainWindow):
         setup_task_creation_section(self, layout)
         setup_task_list_section(self, layout)
         setup_progress_recording_section(self, layout)
-        setup_graph_display_section(self, layout)
+        setup_task_summary_section(self, layout)  # 新しいセクションのセットアップ
 
         # レイアウトを中央ウィジェットに設定
         central_widget.setLayout(layout)
@@ -78,7 +81,8 @@ class StudyProgressApp(QMainWindow):
             self.records[task_name] = []
             self.update_task_list()
             self.update_task_selector()
-            self.update_graph_task_selector()
+            self.update_task_summary_selector()  # タスクサマリーセレクターを更新
+            self.update_task_summary()  # タスクサマリーを更新
             self.task_name_input.clear()
             self.target_amount_input.setValue(0)
             self.data_manager.save_data()  # データを保存
@@ -96,7 +100,8 @@ class StudyProgressApp(QMainWindow):
                 del self.records[task_name]
             self.update_task_list()
             self.update_task_selector()
-            self.update_graph_task_selector()
+            self.update_task_summary_selector()  # タスクサマリーセレクターを更新
+            self.update_task_summary()  # タスクサマリーを更新
             self.data_manager.save_data()  # データを保存
             self.show_info_message("Task deleted successfully!")
         else:
@@ -133,6 +138,7 @@ class StudyProgressApp(QMainWindow):
                 print(f"Cumulative progress for {task_name} updated: {cumulative_progress}")
 
             self.data_manager.save_data()  # データを保存
+            self.update_task_summary()  # タスクサマリーを更新
             self.show_info_message("Progress recorded successfully!")
         else:
             self.show_error_message("No task to record progress for!")
@@ -146,6 +152,7 @@ class StudyProgressApp(QMainWindow):
             if task_name in self.records:
                 self.records[task_name] = [record for record in self.records[task_name] if record["date"] != date]
                 self.data_manager.save_data()  # データを保存
+                self.update_task_summary()  # タスクサマリーを更新
                 self.show_info_message("Progress deleted successfully!")
         else:
             self.show_error_message("No task to delete progress for!")
@@ -168,9 +175,43 @@ class StudyProgressApp(QMainWindow):
         for task in self.tasks:
             self.graph_task_selector.addItem(task["name"])
 
+    def update_task_summary_selector(self):
+        # タスクサマリーセレクターを更新する関数
+        self.task_summary_selector.clear()
+        for task in self.tasks:
+            self.task_summary_selector.addItem(task["name"])
+
+    def update_task_summary(self):
+        # タスクサマリーを更新する関数
+        task_name = self.task_summary_selector.currentText()
+        if task_name:
+            task = next((task for task in self.tasks if task["name"] == task_name), None)
+            if task:
+                total_target_amount = task["target_amount"]
+                total_progress_amount = task["progress_amount"]
+                remaining_amount = total_target_amount - total_progress_amount
+
+                today = datetime.now().date()
+                end_date = datetime.strptime(task["end_date"], "%Y-%m-%d").date()
+                remaining_days = (end_date - today).days
+
+                if remaining_days > 0:
+                    daily_target = remaining_amount / remaining_days
+                else:
+                    daily_target = 0
+
+                self.daily_target_label.setText(f"Daily Target: {daily_target:.2f}")
+                self.total_progress_label.setText(f"Total Progress: {total_progress_amount} / {total_target_amount}")
+            else:
+                self.daily_target_label.setText("Daily Target: N/A")
+                self.total_progress_label.setText("Total Progress: N/A")
+        else:
+            self.daily_target_label.setText("Daily Target: N/A")
+            self.total_progress_label.setText("Total Progress: N/A")
+
     def show_graph(self):
         # グラフを表示する関数
-        task_name = self.graph_task_selector.currentText()
+        task_name = self.task_summary_selector.currentText()
         if not task_name:
             self.show_error_message("No task selected!")
             return
@@ -184,7 +225,7 @@ class StudyProgressApp(QMainWindow):
             self.show_error_message(f"No progress records for {task_name}!")
             return
 
-        target_amount = task["target_amount"]  # 目標量
+        target_amount = task["target_amount"]
         start_date = datetime.strptime(task["start_date"], "%Y-%m-%d")
         end_date = datetime.strptime(task["end_date"], "%Y-%m-%d")
 
@@ -199,7 +240,7 @@ class StudyProgressApp(QMainWindow):
             self.show_error_message("No progress records!")
             return
 
-        record_dates = [record_dates[0] - timedelta(days=1)] + record_dates  # 前日の日付を追加
+        record_dates = [record_dates[0] - timedelta(days=1)] + record_dates
 
         cumulative_progress_list = []
         cumulative_progress = 0
