@@ -141,10 +141,8 @@ class StudyProgressApp(QMainWindow):
         if task_name:
             if task_name in self.records:
                 self.records[task_name] = [record for record in self.records[task_name] if record["date"] != date]
-                # 0を記録
-                self.records[task_name].append({"date": date, "progress_amount": 0})
                 self.data_manager.save_data()  # データを保存
-                self.show_info_message("Progress deleted and 0 recorded successfully!")
+                self.show_info_message("Progress deleted successfully!")
         else:
             self.show_error_message("No task to delete progress for!")
 
