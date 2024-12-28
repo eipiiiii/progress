@@ -1,6 +1,4 @@
-from PyQt5.QtWidgets import (
-    QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QMessageBox
-)
+from PyQt5.QtWidgets import QMainWindow, QVBoxLayout, QWidget, QLabel, QLineEdit, QPushButton, QGroupBox, QComboBox, QFormLayout, QSpinBox, QDateEdit, QListWidget, QMessageBox
 from PyQt5.QtCore import QDate, QTimer
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -8,6 +6,10 @@ from datetime import datetime, timedelta
 import matplotlib.dates as mdates
 from data_manager import DataManager
 import matplotlib.image as mpimg  # 画像を読み込むためのモジュール
+from task_creation import setup_task_creation_section
+from task_list import setup_task_list_section
+from progress_recording import setup_progress_recording_section
+from graph_display import setup_graph_display_section
 
 class StudyProgressApp(QMainWindow):
     def __init__(self):
@@ -27,94 +29,17 @@ class StudyProgressApp(QMainWindow):
         central_widget = QWidget()
         layout = QVBoxLayout()
 
-        # タスク作成セクション
-        self.setup_task_creation_section(layout)
-
-        # タスクリストセクション
-        self.setup_task_list_section(layout)
-
-        # 進捗記録セクション
-        self.setup_progress_recording_section(layout)
-
-        # グラフ表示セクション
-        self.setup_graph_display_section(layout)
+        # 各セクションのセットアップ
+        setup_task_creation_section(self, layout)
+        setup_task_list_section(self, layout)
+        setup_progress_recording_section(self, layout)
+        setup_graph_display_section(self, layout)
 
         # レイアウトを中央ウィジェットに設定
         central_widget.setLayout(layout)
         self.setCentralWidget(central_widget)
 
         self.update_task_list()
-
-    def setup_task_creation_section(self, layout):
-        task_group = QGroupBox("Create New Task")
-        task_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
-        task_layout = QVBoxLayout()
-        task_form = QFormLayout()
-        self.task_name_input = QLineEdit()
-        self.target_amount_input = QSpinBox()  # 目標量入力
-        self.target_amount_input.setMaximum(1000)
-        self.start_date_input = QDateEdit()
-        self.start_date_input.setDate(QDate.currentDate())
-        self.start_date_input.setCalendarPopup(True)
-        self.end_date_input = QDateEdit()
-        self.end_date_input.setDate(QDate.currentDate().addDays(7))
-        self.end_date_input.setCalendarPopup(True)
-        create_task_btn = QPushButton("Create Task")
-        create_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
-        create_task_btn.clicked.connect(self.create_task)
-
-        task_form.addRow("Task Name", self.task_name_input)
-        task_form.addRow("Target Amount", self.target_amount_input)
-        task_form.addRow("Start Date", self.start_date_input)
-        task_form.addRow("End Date", self.end_date_input)
-        task_layout.addLayout(task_form)
-        task_layout.addWidget(create_task_btn)
-        task_group.setLayout(task_layout)
-        layout.addWidget(task_group)
-
-    def setup_task_list_section(self, layout):
-        task_list_group = QGroupBox("Task List")
-        task_list_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
-        task_list_layout = QVBoxLayout()
-        self.task_list = QListWidget()
-        task_list_layout.addWidget(self.task_list)
-
-        delete_task_btn = QPushButton("Delete Selected Task")
-        delete_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
-        delete_task_btn.clicked.connect(self.delete_task)
-        task_list_layout.addWidget(delete_task_btn)
-
-        task_list_group.setLayout(task_list_layout)
-        layout.addWidget(task_list_group)
-
-    def setup_progress_recording_section(self, layout):
-        record_group = QGroupBox("Record Progress")
-        record_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
-        record_layout = QVBoxLayout()
-        record_form = QFormLayout()
-        self.task_selector = QComboBox()
-        self.update_task_selector()
-        self.record_date_input = QDateEdit()
-        self.record_date_input.setDate(QDate.currentDate())
-        self.record_date_input.setCalendarPopup(True)
-        self.record_date_input.dateChanged.connect(self.update_progress_amount_input)  # 日付が変更されたときに呼び出す
-        self.progress_amount_input = QSpinBox()  # 進捗量入力
-        self.progress_amount_input.setMaximum(1000)
-        record_task_btn = QPushButton("Record Progress")
-        record_task_btn.setStyleSheet("QPushButton { font-size: 14px; }")
-        record_task_btn.clicked.connect(self.record_progress)
-        delete_progress_btn = QPushButton("Delete Progress")
-        delete_progress_btn.setStyleSheet("QPushButton { font-size: 14px; }")
-        delete_progress_btn.clicked.connect(self.delete_progress)
-
-        record_form.addRow("Task", self.task_selector)
-        record_form.addRow("Date", self.record_date_input)
-        record_form.addRow("Progress Amount", self.progress_amount_input)
-        record_layout.addLayout(record_form)
-        record_layout.addWidget(record_task_btn)
-        record_layout.addWidget(delete_progress_btn)
-        record_group.setLayout(record_layout)
-        layout.addWidget(record_group)
 
     def update_progress_amount_input(self):
         task_name = self.task_selector.currentText()
@@ -128,21 +53,6 @@ class StudyProgressApp(QMainWindow):
                 self.progress_amount_input.setValue(0)
         else:
             self.progress_amount_input.setValue(0)
-
-    def setup_graph_display_section(self, layout):
-        graph_group = QGroupBox("Display Graph")
-        graph_group.setStyleSheet("QGroupBox { font-size: 16px; font-weight: bold; }")
-        graph_layout = QVBoxLayout()
-        self.graph_task_selector = QComboBox()
-        self.update_graph_task_selector()
-        show_graph_btn = QPushButton("Show Graph")
-        show_graph_btn.setStyleSheet("QPushButton { font-size: 14px; }")
-        show_graph_btn.clicked.connect(self.show_graph)
-        graph_layout.addWidget(QLabel("Select Task"))
-        graph_layout.addWidget(self.graph_task_selector)
-        graph_layout.addWidget(show_graph_btn)
-        graph_group.setLayout(graph_layout)
-        layout.addWidget(graph_group)
 
     def create_task(self):
         task_name = self.task_name_input.text()
