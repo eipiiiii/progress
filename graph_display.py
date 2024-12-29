@@ -22,8 +22,7 @@ def setup_graph_display_section(app, layout):
     layout.addWidget(graph_group)
 
 def show_graph(app):
-    # グラフを表示する関数
-    task_name = app.graph_task_selector.currentText()
+    task_name = app.task_summary_selector.currentText()
     if not task_name:
         app.show_error_message("No task selected!")
         return
